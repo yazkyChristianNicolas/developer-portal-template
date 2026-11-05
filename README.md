@@ -87,3 +87,71 @@ developers-portal:
 ```
 
 `docker/nginx.conf` sirve las copias `.md` como `text/markdown` y `llms*.txt`/el spec con CORS abierto, para que las herramientas de IA los puedan leer desde cualquier origen.
+
+## Migrar un portal existente a este formato
+
+Prompt para pegar en Claude Code, dentro del repo de un developers portal existente. Antes de usarlo, completá al principio: cómo se despliega hoy el portal (registry, servidor, hosting estático o contenedor), de dónde sale el spec (URL o repo) y si hay un servidor MCP.
+
+````markdown
+Quiero migrar este developers portal existente al formato de la plantilla
+https://github.com/yazkyChristianNicolas/developer-portal-template
+(clonala en un directorio temporal fuera de este repo y usala como referencia).
+
+## Objetivo
+Que este portal quede con la misma arquitectura y funcionalidades que la plantilla,
+conservando mi marca, mi contenido y mi spec. No inventes contenido: lo que no exista
+en el portal actual, dejalo como TODO o preguntámelo.
+
+## Qué conservar (no sobrescribir)
+- Nombre de la marca, logos, favicon y textos de la home.
+- Mi design system (colores, tipografías, radios). Mapealo a los tokens de
+  `src/css/custom.css` de la plantilla, sin hardcodear colores fuera de los tokens.
+- Mi spec OpenAPI/Swagger (va en `apis/<nombre>/openapi.json`) y todo el contenido
+  de las guías actuales.
+- Mis URLs, dominios, nombres de ambientes y configuración de despliegue.
+
+## Qué adoptar de la plantilla
+1. **Stack**: Docusaurus + `redocusaurus` (Redoc en `/api/`) + Redocly CLI
+   (`redocly.yaml` con `portal/tag-groups` y `redocly/portal-plugin.cjs`) + búsqueda local.
+2. **Navbar y footer**: Guías, Referencia de la API, Recursos para IA; footer con
+   Empezar / Referencia / Descargas (OpenAPI, llms.txt, llms-full.txt).
+3. **Estructura de `docs/`**: introducción, primeros pasos, autenticación, ambientes (.mdx),
+   conceptos/convenciones, guías, referencia/errores (.mdx), recursos-para-ia. El sidebar es
+   autogenerado desde `sidebar_position` y `_category_.json`. Cada página lleva `title`,
+   `description` y `sidebar_position`.
+4. **Ambientes en runtime**: `portal.environment.mts`, componentes `EnvironmentTable` y
+   `SandboxOnly`, `Dockerfile` con placeholders `__PORTAL_*__`, `docker/40-portal-config.sh`
+   y `docker/nginx.conf`. Una sola imagen para todos los ambientes. Ajustá las variables
+   `PORTAL_*` a los ambientes que realmente tengo.
+5. **Recursos para IA**: `scripts/generate-llms.mts` (llms.txt, llms-full.txt, copias .md y
+   referencia en Markdown). Actualizá el título/intro y las conversiones de los componentes
+   que use mi contenido. Agregá la guía de agentes MCP solo si tengo un servidor MCP.
+6. **Catálogo de errores**: si mi API tiene un catálogo, exponelo como `example` de
+   `GET /errors` y usá `ErrorCatalog`. Si no, omití esa página y el componente.
+7. **Chequeo de términos internos**: `scripts/check-public-terms.mts`, completando
+   `FORBIDDEN` con las tecnologías internas de mi stack.
+8. **CI/CD**: los workflows `ci.yml`, `production.yml`, `sync-openapi.yml`,
+   `cleanup-images.yml` y la action `deploy`, adaptados a mi repo, mi registry y mi forma
+   de despliegue. Flujo `feature/* → development → main`, build una sola vez y promoción
+   sin rebuild.
+9. **Hygiene**: `.gitignore` (incluidas las carpetas de agentes de IA), `.dockerignore`,
+   `.env.example`, `README.md` actualizado.
+
+## Cómo trabajar
+1. Primero inspeccioná este repo y la plantilla, y mostrame un plan breve con: qué se
+   mantiene, qué se reemplaza, qué se elimina y qué decisiones necesitás de mí. Esperá mi OK.
+2. Trabajá en una rama nueva (`chore/migrar-formato-plantilla`), con commits chicos y
+   mensajes claros.
+3. Migrá el contenido existente a la nueva estructura sin perder información; si
+   movés o renombrás páginas, mantené los slugs viejos (o agregá redirects) para no romper
+   links externos.
+4. Al final corré `npm run build` y arreglá lo que falle (links rotos, lint del spec,
+   términos prohibidos). Mostrame el resultado, no lo des por hecho.
+5. No hagas push ni abras PR sin que te lo pida.
+
+## Criterio de terminado
+- `npm run build` pasa completo.
+- Navbar, `/api/`, footer, búsqueda, modo oscuro y `llms.txt` funcionan.
+- No quedan referencias a la plantilla ("Acme") ni a tecnologías internas.
+- El README explica cómo se configura y despliega este portal.
+````
