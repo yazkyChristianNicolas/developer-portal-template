@@ -1,0 +1,60 @@
+name: Sync OpenAPI
+
+# Descarga el spec publicado por el servicio (una URL) y abre un PR contra `development` si
+# cambió. Corre en días hábiles, a mano, o cuando el servicio lo dispara con un
+# repository_dispatch de tipo `openapi-updated`.
+#
+# Requiere:
+#   - variable OPENAPI_SOURCE_URL: URL del openapi.json del servicio (ej. su /v3/api-docs).
+#   - opcional, secret OPENAPI_SOURCE_TOKEN: Bearer token si esa URL no es pública.
+#   - Settings > Actions > General: "Allow GitHub Actions to create and approve pull requests".
+on:
+  schedule:
+    - cron: '0 9 * * 1-5'
+  workflow_dispatch:
+  repository_dispatch:
+    types: [openapi-updated]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: development
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Descargar el spec
+        env:
+          URL: ${{ vars.OPENAPI_SOURCE_URL }}
+          TOKEN: ${{ secrets.OPENAPI_SOURCE_TOKEN }}
+        run: |
+          curl --fail -sS ${TOKEN:+-H "Authorization: Bearer $TOKEN"} "$URL" \
+            | node -e "process.stdout.write(JSON.stringify(JSON.parse(require('fs').readFileSync(0,'utf8')),null,2)+'\n')" \
+            > apis/acme/openapi.json
+
+      # Si el spec nuevo trae términos internos o rompe el lint, falla acá y no abre el PR.
+      - name: Validar el spec
+        run: |
+          npm ci
+          npm run lint:terms
+          npm run api:lint
+
+      - uses: peter-evans/create-pull-request@v7
+        with:
+          base: development
+          branch: chore/sync-openapi
+          delete-branch: true
+          commit-message: Sincronizar OpenAPI
+          title: Sincronizar OpenAPI
+          body: |
+            Spec descargado de `${{ vars.OPENAPI_SOURCE_URL }}`.
+            Ya pasó `lint:terms` y `api:lint`. Revisá que las guías de `docs/` sigan coincidiendo con los cambios.
+          add-paths: apis/acme/openapi.json

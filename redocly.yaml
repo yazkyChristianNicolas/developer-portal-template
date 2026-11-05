@@ -1,0 +1,41 @@
+# Lint y bundle del spec de la API.
+#   npm run api:lint    -> valida apis/acme/openapi.json
+#   npm run api:bundle  -> aplica los decorators y escribe static/openapi/acme.json
+#                          (lo que renderiza Redoc y lo que se ofrece para descargar)
+apis:
+  acme:
+    root: apis/acme/openapi.json
+    output: static/openapi/acme.json
+
+extends:
+  - recommended
+
+plugins:
+  - ./redocly/portal-plugin.cjs
+
+rules:
+  # API propietaria, sin licencia pública.
+  info-license: off
+  # /health y /errors solo responden 200: no tienen respuestas 4XX que documentar.
+  operation-4xx-response: off
+  # /health y /errors son públicos a propósito (ver su descripción en el spec).
+  security-defined:
+    severity: error
+    exceptions:
+      - path: /health
+      - path: /errors
+
+decorators:
+  # Nombre público de la API (el del servicio puede ser interno).
+  info-override:
+    title: Acme API
+  portal/tag-groups:
+    groups:
+      - name: Pedidos
+        tags: [orders]
+      - name: Catálogo
+        tags: [products, customers]
+      - name: Integraciones
+        tags: [webhooks, api-clients]
+      - name: Operación
+        tags: [errors, health]

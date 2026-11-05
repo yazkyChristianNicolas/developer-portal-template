@@ -1,0 +1,330 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Acme API",
+    "version": "1.0.0",
+    "description": "API REST para gestionar pedidos, clientes y productos. JSON en snake_case, montos enteros en centavos y errores `application/problem+json` con un `code` numérico estable."
+  },
+  "servers": [{"url": "https://api.ejemplo.com", "description": "Sandbox"}],
+  "tags": [
+    {"name": "orders", "description": "Crear, consultar y cancelar pedidos."},
+    {"name": "products", "description": "Catálogo de productos."},
+    {"name": "customers", "description": "Clientes finales de tu cuenta."},
+    {"name": "webhooks", "description": "Suscripciones a eventos."},
+    {"name": "api-clients", "description": "Credenciales para integraciones servidor a servidor."},
+    {"name": "errors", "description": "Catálogo público de errores."},
+    {"name": "health", "description": "Estado del servicio."}
+  ],
+  "paths": {
+    "/orders": {
+      "post": {
+        "tags": ["orders"],
+        "summary": "Crear un pedido",
+        "description": "Crea un pedido para un cliente. Es idempotente si enviás el header `Idempotency-Key`.",
+        "operationId": "createOrder",
+        "security": [{"api-client": []}],
+        "parameters": [
+          {"name": "Idempotency-Key", "in": "header", "required": false, "description": "Clave única por request para reintentos seguros.", "schema": {"type": "string", "maxLength": 64}}
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {"$ref": "#/components/schemas/CreateOrderRequest"},
+              "example": {"customer_id": "cus_01HZX", "currency": "ARS", "items": [{"product_id": "prd_01HZY", "quantity": 2}]}
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pedido creado.",
+            "headers": {"Location": {"description": "URL del pedido creado.", "schema": {"type": "string"}}},
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Order"}, "example": {"id": "ord_01HZZ", "customer_id": "cus_01HZX", "status": "PENDING", "currency": "ARS", "total_amount": 24200, "created_at": "2026-01-15T12:30:00Z"}}}
+          },
+          "400": {"$ref": "#/components/responses/ValidationError"},
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      },
+      "get": {
+        "tags": ["orders"],
+        "summary": "Listar pedidos",
+        "description": "Lista paginada (offset) de pedidos, del más reciente al más antiguo.",
+        "operationId": "searchOrders",
+        "security": [{"api-client": []}],
+        "parameters": [
+          {"name": "status", "in": "query", "required": false, "description": "Filtra por estado.", "schema": {"$ref": "#/components/schemas/OrderStatus"}},
+          {"name": "page", "in": "query", "required": false, "description": "Página, desde 1.", "schema": {"type": "integer", "minimum": 1, "default": 1}},
+          {"name": "size", "in": "query", "required": false, "description": "Resultados por página.", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20}}
+        ],
+        "responses": {
+          "200": {
+            "description": "Página de pedidos.",
+            "content": {"application/json": {"schema": {"$ref": "#/components/schemas/OrderPage"}, "example": {"data": [{"id": "ord_01HZZ", "customer_id": "cus_01HZX", "status": "PENDING", "currency": "ARS", "total_amount": 24200, "created_at": "2026-01-15T12:30:00Z"}], "meta": {"page": 1, "size": 20, "total": 1}}}}
+          },
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "tags": ["orders"],
+        "summary": "Obtener un pedido",
+        "operationId": "getOrder",
+        "security": [{"api-client": []}],
+        "parameters": [{"$ref": "#/components/parameters/OrderId"}],
+        "responses": {
+          "200": {"description": "El pedido.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Order"}, "example": {"id": "ord_01HZZ", "customer_id": "cus_01HZX", "status": "PAID", "currency": "ARS", "total_amount": 24200, "created_at": "2026-01-15T12:30:00Z"}}}},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "404": {"$ref": "#/components/responses/NotFound"}
+        }
+      }
+    },
+    "/orders/{id}/cancel": {
+      "post": {
+        "tags": ["orders"],
+        "summary": "Cancelar un pedido",
+        "description": "Solo se pueden cancelar pedidos en estado `PENDING`.",
+        "operationId": "cancelOrder",
+        "security": [{"api-client": []}],
+        "parameters": [{"$ref": "#/components/parameters/OrderId"}],
+        "responses": {
+          "200": {"description": "Pedido cancelado.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Order"}, "example": {"id": "ord_01HZZ", "customer_id": "cus_01HZX", "status": "CANCELLED", "currency": "ARS", "total_amount": 24200, "created_at": "2026-01-15T12:30:00Z"}}}},
+          "401": {"$ref": "#/components/responses/Unauthorized"},
+          "404": {"$ref": "#/components/responses/NotFound"},
+          "409": {
+            "description": "El pedido no está en un estado cancelable.",
+            "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/Problem"}, "examples": {"notCancellable": {"summary": "Pedido ya pagado", "value": {"type": "about:blank", "title": "Conflict", "status": 409, "code": 409102, "detail": "El pedido ord_01HZZ está en estado PAID y no se puede cancelar."}}}}}
+          }
+        }
+      }
+    },
+    "/products": {
+      "get": {
+        "tags": ["products"],
+        "summary": "Listar productos",
+        "operationId": "searchProducts",
+        "security": [{"api-client": []}],
+        "parameters": [
+          {"name": "page", "in": "query", "required": false, "description": "Página, desde 1.", "schema": {"type": "integer", "minimum": 1, "default": 1}},
+          {"name": "size", "in": "query", "required": false, "description": "Resultados por página.", "schema": {"type": "integer", "minimum": 1, "maximum": 100, "default": 20}}
+        ],
+        "responses": {
+          "200": {"description": "Página de productos.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ProductPage"}, "example": {"data": [{"id": "prd_01HZY", "name": "Remera básica", "price": 12100, "currency": "ARS"}], "meta": {"page": 1, "size": 20, "total": 1}}}}},
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      }
+    },
+    "/customers": {
+      "post": {
+        "tags": ["customers"],
+        "summary": "Crear un cliente",
+        "operationId": "createCustomer",
+        "security": [{"api-client": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreateCustomerRequest"}, "example": {"name": "Ada Lovelace", "email": "ada@ejemplo.com"}}}},
+        "responses": {
+          "201": {"description": "Cliente creado.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Customer"}, "example": {"id": "cus_01HZX", "name": "Ada Lovelace", "email": "ada@ejemplo.com"}}}},
+          "400": {"$ref": "#/components/responses/ValidationError"},
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      }
+    },
+    "/webhooks": {
+      "post": {
+        "tags": ["webhooks"],
+        "summary": "Crear una suscripción",
+        "description": "Registra una URL para recibir eventos. Cada entrega se firma con HMAC-SHA256 en el header `X-Signature`.",
+        "operationId": "createWebhook",
+        "security": [{"api-client": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreateWebhookRequest"}, "example": {"url": "https://tu-sistema.com/hooks/acme", "events": ["order.paid", "order.cancelled"]}}}},
+        "responses": {
+          "201": {"description": "Suscripción creada.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Webhook"}, "example": {"id": "whk_01J00", "url": "https://tu-sistema.com/hooks/acme", "events": ["order.paid", "order.cancelled"], "secret": "whsec_ejemplo"}}}},
+          "400": {"$ref": "#/components/responses/ValidationError"},
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      }
+    },
+    "/api-clients": {
+      "post": {
+        "tags": ["api-clients"],
+        "summary": "Crear un API Client",
+        "description": "Genera un `client_id` y un `client_secret` para obtener tokens con `client_credentials`. El secret se muestra una sola vez.",
+        "operationId": "createApiClient",
+        "security": [{"user-session": []}],
+        "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/CreateApiClientRequest"}, "example": {"name": "Integración ERP"}}}},
+        "responses": {
+          "201": {"description": "API Client creado.", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/ApiClient"}, "example": {"client_id": "acme_c_01J01", "client_secret": "sec_ejemplo", "name": "Integración ERP"}}}},
+          "400": {"$ref": "#/components/responses/ValidationError"},
+          "401": {"$ref": "#/components/responses/Unauthorized"}
+        }
+      }
+    },
+    "/errors": {
+      "get": {
+        "tags": ["errors"],
+        "summary": "Catálogo de errores",
+        "description": "Lista todos los errores que puede devolver la API. Es público a propósito: no requiere autenticación.",
+        "operationId": "listErrors",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Catálogo completo.",
+            "content": {
+              "application/json": {
+                "schema": {"type": "array", "items": {"$ref": "#/components/schemas/ErrorCatalogEntry"}},
+                "example": [
+                  {"name": "VALIDATION_FAILED", "status": 400, "code": 400101, "example_detail": "El campo items no puede estar vacío."},
+                  {"name": "UNAUTHORIZED", "status": 401, "code": 401101, "example_detail": "Token ausente o vencido."},
+                  {"name": "ORDER_NOT_FOUND", "status": 404, "code": 404101, "example_detail": "No existe el pedido ord_01HZZ."},
+                  {"name": "ORDER_NOT_CANCELLABLE", "status": 409, "code": 409102, "example_detail": "El pedido ord_01HZZ está en estado PAID y no se puede cancelar."}
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": ["health"],
+        "summary": "Estado del servicio",
+        "description": "Devuelve 200 si el servicio está operativo. Es público a propósito.",
+        "operationId": "health",
+        "security": [],
+        "responses": {
+          "200": {"description": "Operativo.", "content": {"application/json": {"schema": {"type": "object", "properties": {"status": {"type": "string"}}}, "example": {"status": "ok"}}}}
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "api-client": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT", "description": "Access token obtenido con `client_credentials` (ver Autenticación)."},
+      "user-session": {"type": "http", "scheme": "bearer", "bearerFormat": "JWT", "description": "Token de la sesión de un usuario de la consola."}
+    },
+    "parameters": {
+      "OrderId": {"name": "id", "in": "path", "required": true, "description": "ID del pedido.", "schema": {"type": "string"}}
+    },
+    "responses": {
+      "ValidationError": {"description": "El request no es válido.", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/Problem"}, "examples": {"validation": {"summary": "Campo inválido", "value": {"type": "about:blank", "title": "Bad Request", "status": 400, "code": 400101, "detail": "El campo items no puede estar vacío."}}}}}},
+      "Unauthorized": {"description": "Falta el token o no es válido.", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/Problem"}, "examples": {"unauthorized": {"summary": "Token ausente o vencido", "value": {"type": "about:blank", "title": "Unauthorized", "status": 401, "code": 401101, "detail": "Token ausente o vencido."}}}}}},
+      "NotFound": {"description": "El recurso no existe.", "content": {"application/problem+json": {"schema": {"$ref": "#/components/schemas/Problem"}, "examples": {"notFound": {"summary": "Pedido inexistente", "value": {"type": "about:blank", "title": "Not Found", "status": 404, "code": 404101, "detail": "No existe el pedido ord_01HZZ."}}}}}}
+    },
+    "schemas": {
+      "Problem": {
+        "type": "object",
+        "description": "Error en formato RFC 7807 con un `code` numérico estable.",
+        "required": ["status", "code", "detail"],
+        "properties": {
+          "type": {"type": "string", "example": "about:blank"},
+          "title": {"type": "string", "example": "Bad Request"},
+          "status": {"type": "integer", "example": 400},
+          "code": {"type": "integer", "description": "Código estable: manejá los errores por este valor.", "example": 400101},
+          "detail": {"type": "string", "description": "Texto legible, puede cambiar."}
+        }
+      },
+      "ErrorCatalogEntry": {
+        "type": "object",
+        "required": ["name", "status", "code", "example_detail"],
+        "properties": {
+          "name": {"type": "string"},
+          "status": {"type": "integer"},
+          "code": {"type": "integer"},
+          "example_detail": {"type": "string"}
+        }
+      },
+      "OrderStatus": {"type": "string", "enum": ["PENDING", "PAID", "CANCELLED"], "description": "Estado del pedido."},
+      "OrderItem": {
+        "type": "object",
+        "required": ["product_id", "quantity"],
+        "properties": {
+          "product_id": {"type": "string", "description": "ID del producto."},
+          "quantity": {"type": "integer", "minimum": 1, "description": "Unidades."}
+        }
+      },
+      "CreateOrderRequest": {
+        "type": "object",
+        "required": ["customer_id", "currency", "items"],
+        "properties": {
+          "customer_id": {"type": "string", "description": "ID del cliente."},
+          "currency": {"type": "string", "enum": ["ARS", "USD"], "description": "Moneda del pedido."},
+          "items": {"type": "array", "minItems": 1, "items": {"$ref": "#/components/schemas/OrderItem"}}
+        }
+      },
+      "Order": {
+        "type": "object",
+        "required": ["id", "customer_id", "status", "currency", "total_amount", "created_at"],
+        "properties": {
+          "id": {"type": "string"},
+          "customer_id": {"type": "string"},
+          "status": {"$ref": "#/components/schemas/OrderStatus"},
+          "currency": {"type": "string"},
+          "total_amount": {"type": "integer", "description": "Total en centavos."},
+          "created_at": {"type": "string", "format": "date-time"}
+        }
+      },
+      "PageMeta": {
+        "type": "object",
+        "required": ["page", "size", "total"],
+        "properties": {"page": {"type": "integer"}, "size": {"type": "integer"}, "total": {"type": "integer"}}
+      },
+      "OrderPage": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {"data": {"type": "array", "items": {"$ref": "#/components/schemas/Order"}}, "meta": {"$ref": "#/components/schemas/PageMeta"}}
+      },
+      "Product": {
+        "type": "object",
+        "required": ["id", "name", "price", "currency"],
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "price": {"type": "integer", "description": "Precio unitario en centavos."},
+          "currency": {"type": "string"}
+        }
+      },
+      "ProductPage": {
+        "type": "object",
+        "required": ["data", "meta"],
+        "properties": {"data": {"type": "array", "items": {"$ref": "#/components/schemas/Product"}}, "meta": {"$ref": "#/components/schemas/PageMeta"}}
+      },
+      "CreateCustomerRequest": {
+        "type": "object",
+        "required": ["name", "email"],
+        "properties": {"name": {"type": "string"}, "email": {"type": "string", "format": "email"}}
+      },
+      "Customer": {
+        "type": "object",
+        "required": ["id", "name", "email"],
+        "properties": {"id": {"type": "string"}, "name": {"type": "string"}, "email": {"type": "string", "format": "email"}}
+      },
+      "CreateWebhookRequest": {
+        "type": "object",
+        "required": ["url", "events"],
+        "properties": {
+          "url": {"type": "string", "format": "uri", "description": "HTTPS que recibe los eventos."},
+          "events": {"type": "array", "minItems": 1, "items": {"type": "string", "enum": ["order.paid", "order.cancelled"]}}
+        }
+      },
+      "Webhook": {
+        "type": "object",
+        "required": ["id", "url", "events", "secret"],
+        "properties": {
+          "id": {"type": "string"},
+          "url": {"type": "string", "format": "uri"},
+          "events": {"type": "array", "items": {"type": "string"}},
+          "secret": {"type": "string", "description": "Secreto para verificar la firma. Se muestra una sola vez."}
+        }
+      },
+      "CreateApiClientRequest": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {"name": {"type": "string", "description": "Nombre para identificar la integración."}}
+      },
+      "ApiClient": {
+        "type": "object",
+        "required": ["client_id", "client_secret", "name"],
+        "properties": {"client_id": {"type": "string"}, "client_secret": {"type": "string"}, "name": {"type": "string"}}
+      }
+    }
+  }
+}

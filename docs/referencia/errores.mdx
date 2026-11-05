@@ -1,0 +1,17 @@
+---
+sidebar_position: 2
+title: Catálogo de errores
+description: Todos los códigos de error que puede devolver la API, con su status HTTP.
+---
+
+import ErrorCatalog from '@site/src/components/ErrorCatalog';
+
+# Catálogo de errores
+
+Todos los errores que puede devolver la API, ordenados por `code`. El formato de la respuesta está en [Convenciones](../conceptos/convenciones.md#errores).
+
+- Manejá los errores por `code`, que es estable. El texto de `detail` puede cambiar.
+- `detail` completa los datos del caso: la columna de la derecha es un ejemplo.
+- La misma lista está disponible en JSON, sin autenticación, en `GET /errors`.
+
+<ErrorCatalog />

@@ -1,0 +1,54 @@
+{
+  "name": "developer-portal",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npm run api:bundle && docusaurus start",
+    "build": "npm run lint:terms && npm run api:lint && npm run api:bundle && docusaurus build && npm run llms",
+    "serve": "docusaurus serve",
+    "clear": "docusaurus clear",
+    "typecheck": "npm run api:bundle && tsc",
+    "api:lint": "redocly lint",
+    "api:bundle": "redocly bundle",
+    "lint:terms": "node scripts/check-public-terms.mts",
+    "llms": "node scripts/generate-llms.mts",
+    "docusaurus": "docusaurus",
+    "swizzle": "docusaurus swizzle"
+  },
+  "dependencies": {
+    "@docusaurus/core": "3.10.2",
+    "@docusaurus/faster": "3.10.2",
+    "@docusaurus/preset-classic": "3.10.2",
+    "@docusaurus/theme-mermaid": "^3.10.2",
+    "@easyops-cn/docusaurus-search-local": "^0.55.3",
+    "@mdx-js/react": "^3.0.0",
+    "clsx": "^2.0.0",
+    "prism-react-renderer": "^2.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "redocusaurus": "^2.5.2"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "3.10.2",
+    "@docusaurus/tsconfig": "3.10.2",
+    "@docusaurus/types": "3.10.2",
+    "@redocly/cli": "^2.55.0",
+    "@types/react": "^19.0.0",
+    "typescript": "~6.0.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=22.18"
+  }
+}

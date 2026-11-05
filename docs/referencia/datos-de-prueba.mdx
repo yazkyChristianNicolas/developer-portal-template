@@ -1,0 +1,22 @@
+---
+sidebar_position: 1
+title: Datos de prueba
+description: Clientes, productos y tarjetas de prueba para el ambiente sandbox.
+---
+
+import SandboxOnly from '@site/src/components/SandboxOnly';
+
+# Datos de prueba
+
+<SandboxOnly>
+
+Estos datos existen en todas las cuentas sandbox.
+
+| Recurso | ID | Notas |
+|---|---|---|
+| Cliente | `cus_test_ada` | Cliente de ejemplo con email válido. |
+| Producto | `prd_test_remera` | Precio `12100` centavos en `ARS`. |
+
+Para forzar el pago de un pedido, creá uno por `24200` centavos: el sandbox lo marca `PAID` a los pocos segundos y dispara `order.paid`.
+
+</SandboxOnly>

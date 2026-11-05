@@ -1,0 +1,44 @@
+name: Production
+
+# Pipeline de promoción: al mergear `development` a `main` no se buildea nada. Se busca la
+# imagen que ya se construyó y probó en desarrollo para este mismo contenido (mismo árbol
+# de git), se le agrega el tag `production` y se despliega en el environment `production`.
+# Si no existe, el contenido no pasó por `development` y la promoción falla.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Re-etiquetar la imagen de development
+        run: |
+          TREE=$(git rev-parse HEAD^{tree})
+          docker buildx imagetools inspect "$IMAGE:tree-$TREE" > /dev/null \
+            || { echo "No hay imagen para este contenido: pasá por development primero." >&2; exit 1; }
+          docker buildx imagetools create -t "$IMAGE:production" "$IMAGE:tree-$TREE"
+      - uses: ./.github/actions/deploy
+        if: vars.DEPLOY_ENABLED == 'true'
+        with:
+          tag: production
+          host: ${{ secrets.DEPLOY_HOST }}
+          user: ${{ secrets.DEPLOY_USER }}
+          ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          healthcheck-url: ${{ vars.HEALTHCHECK_URL }}

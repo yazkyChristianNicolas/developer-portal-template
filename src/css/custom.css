@@ -1,0 +1,282 @@
+/**
+ * Design system del portal sobre Infima (el CSS de Docusaurus).
+ *
+ * TODA la identidad visual vive en los tokens de `:root` y `[data-theme='dark']`: para
+ * cambiar de design system alcanza con reemplazar estos valores (y las fuentes en
+ * docusaurus.config.ts). Reglas que aplican:
+ *   - Pizarra (`ink`): texto, navbar, footer y código. Acento (`accent`): solo acción
+ *     (CTA, foco, link activo, marca del item activo). Las cards y tablas van en blanco
+ *     con borde hairline.
+ *   - El degradado de marca va solo en el hero de la home.
+ *   - Tipografía: Inter para todo el texto, JetBrains Mono para código, endpoints y JSON.
+ *   - Modo oscuro opt-in (toggle); el default es claro.
+ */
+
+:root {
+  /* Tokens de marca */
+  --brand-ink: #0f172a;
+  --brand-ink-90: #1e293b;
+  --brand-ink-70: #475569;
+  --brand-accent: #14b8a6;
+  --brand-accent-hover: #0d9488;
+  --brand-accent-soft: #ccfbf1;
+  --brand-canvas: #f8fafc;
+  --brand-white: #ffffff;
+  --brand-line: #e2e8f0;
+  --brand-line-strong: #cbd5e1;
+  --brand-muted: #64748b;
+  --brand-success: #15803d;
+  --brand-error: #b91c1c;
+  --brand-warn: #b45309;
+  --brand-info: #475569;
+  /* Degradado de marca: único lugar donde viven los colores secundarios. */
+  --brand-gradient: radial-gradient(
+      70% 90% at 0% 100%,
+      rgb(20 184 166 / 0.55) 0%,
+      rgb(20 184 166 / 0) 72%
+    ),
+    radial-gradient(
+      45% 60% at 100% 0%,
+      rgb(99 102 241 / 0.5) 0%,
+      rgb(99 102 241 / 0) 75%
+    ),
+    #0f172a;
+  --brand-ring-focus: 0 0 0 3px rgb(20 184 166 / 0.3);
+
+  --brand-surface-app: var(--brand-canvas);
+  --brand-surface-card: #ffffff;
+  --brand-surface-sunken: #f1f5f9;
+  --brand-surface-code: var(--brand-ink);
+  --brand-text-primary: var(--brand-ink);
+  --brand-text-secondary: var(--brand-ink-70);
+  --brand-text-muted: var(--brand-muted);
+  --brand-border: var(--brand-line);
+  --brand-border-strong: var(--brand-line-strong);
+  --brand-shadow-sm: 0 1px 2px rgb(15 23 42 / 0.06);
+  --brand-shadow-md: 0 8px 24px rgb(15 23 42 / 0.1);
+
+  --font-ui: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Infima. `primary` es pizarra (links, item activo); el acento va solo en acentos. */
+  --ifm-color-primary: #0f172a;
+  --ifm-color-primary-dark: #0d1526;
+  --ifm-color-primary-darker: #0c1424;
+  --ifm-color-primary-darkest: #0a101d;
+  --ifm-color-primary-light: #111c32;
+  --ifm-color-primary-lighter: #121d34;
+  --ifm-color-primary-lightest: #1e293b;
+
+  --ifm-background-color: var(--brand-surface-app);
+  --ifm-background-surface-color: var(--brand-surface-app);
+  --ifm-font-color-base: var(--brand-text-primary);
+  --ifm-color-content-secondary: var(--brand-text-secondary);
+  --ifm-font-family-base: var(--font-ui);
+  --ifm-heading-font-family: var(--font-ui);
+  --ifm-font-family-monospace: var(--font-mono);
+  --ifm-heading-font-weight: 600;
+  --ifm-code-font-size: 92%;
+
+  --ifm-link-color: var(--brand-ink);
+  --ifm-link-hover-color: var(--brand-accent-hover);
+  --ifm-link-decoration: none;
+
+  --ifm-toc-border-color: var(--brand-border);
+  --ifm-hr-background-color: var(--brand-border);
+  --ifm-table-border-color: var(--brand-border);
+  --ifm-table-stripe-background: var(--brand-surface-sunken);
+  --ifm-table-head-background: var(--brand-surface-sunken);
+  --ifm-color-emphasis-300: var(--brand-border);
+
+  --ifm-menu-color: var(--brand-text-secondary);
+  --ifm-menu-color-active: var(--brand-ink);
+  --ifm-menu-color-background-active: rgb(15 23 42 / 0.07);
+  --ifm-menu-color-background-hover: rgb(15 23 42 / 0.04);
+
+  --ifm-navbar-background-color: var(--brand-ink);
+  --ifm-navbar-link-color: var(--brand-canvas);
+  --ifm-navbar-link-hover-color: var(--brand-accent);
+  --ifm-navbar-height: 64px;
+  --ifm-navbar-shadow: none;
+
+  --ifm-footer-background-color: var(--brand-ink);
+  --ifm-footer-color: var(--brand-canvas);
+  --ifm-footer-link-color: var(--brand-canvas);
+  --ifm-footer-link-hover-color: var(--brand-accent);
+  --ifm-footer-title-color: var(--brand-canvas);
+
+  --ifm-button-border-radius: 8px;
+  --ifm-card-border-radius: 12px;
+  --ifm-global-radius: 8px;
+  --ifm-code-border-radius: 6px;
+  --ifm-pre-background: var(--brand-surface-code);
+
+  --docusaurus-highlighted-code-line-bg: rgb(248 250 252 / 0.08);
+}
+
+[data-theme='dark'] {
+  --brand-surface-app: #020617;
+  --brand-surface-card: #0f172a;
+  --brand-surface-sunken: #0b1220;
+  --brand-surface-code: #020617;
+  --brand-text-primary: #f8fafc;
+  --brand-text-secondary: #cbd5e1;
+  --brand-text-muted: #94a3b8;
+  --brand-border: #1e293b;
+  --brand-border-strong: #334155;
+  --brand-success: #4ade80;
+  --brand-error: #f87171;
+  --brand-warn: #fbbf24;
+  --brand-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.4);
+  --brand-shadow-md: 0 8px 24px rgb(0 0 0 / 0.45);
+
+  --ifm-color-primary: #f8fafc;
+  --ifm-color-primary-dark: #e2e8f0;
+  --ifm-color-primary-darker: #cbd5e1;
+  --ifm-color-primary-darkest: #94a3b8;
+  --ifm-color-primary-light: #ffffff;
+  --ifm-color-primary-lighter: #ffffff;
+  --ifm-color-primary-lightest: #ffffff;
+
+  --ifm-link-color: var(--brand-canvas);
+  --ifm-link-hover-color: var(--brand-accent);
+  --ifm-table-stripe-background: var(--brand-surface-card);
+  --ifm-table-head-background: var(--brand-surface-card);
+  --ifm-color-emphasis-300: var(--brand-border);
+  --ifm-menu-color-active: var(--brand-canvas);
+  --ifm-menu-color-background-active: rgb(248 250 252 / 0.1);
+  --ifm-menu-color-background-hover: rgb(248 250 252 / 0.06);
+  --ifm-navbar-background-color: var(--brand-ink);
+  --ifm-footer-background-color: #020617;
+}
+
+/* Foco: anillo de acento, nunca el outline azul del navegador. */
+:focus-visible {
+  outline: none;
+  box-shadow: var(--brand-ring-focus);
+}
+
+::selection {
+  background: var(--brand-accent-soft);
+  color: var(--brand-ink);
+}
+
+/* ---------- Tipografía ---------- */
+
+h1,
+.hero__title {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+code,
+kbd,
+pre {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Código inline: chip sobre fondo hundido, sin el borde por defecto de Infima. */
+:not(pre) > code {
+  background: var(--brand-surface-sunken);
+  border: 1px solid var(--brand-border);
+  color: var(--brand-text-primary);
+}
+
+/* Bloques de código: siempre sobre fondo oscuro. */
+.theme-code-block,
+.prism-code {
+  background-color: var(--brand-surface-code) !important;
+}
+
+/* Links subrayados solo dentro del contenido (guías y tablas), nunca en navegación. */
+.markdown a,
+.theme-doc-markdown a {
+  text-decoration: underline;
+  text-decoration-color: var(--brand-border-strong);
+  text-underline-offset: 3px;
+}
+
+.markdown a:hover,
+.theme-doc-markdown a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* ---------- Navbar ---------- */
+
+.navbar {
+  border-bottom: 1px solid rgb(248 250 252 / 0.08);
+}
+
+.navbar__logo {
+  height: 28px;
+}
+
+.navbar__title {
+  font-weight: 500;
+  color: var(--brand-accent);
+  letter-spacing: 0.02em;
+}
+
+.navbar__link--active {
+  color: var(--brand-accent);
+}
+
+/* La navbar es oscura en los dos modos: los íconos (tema, búsqueda, menú) en claro. */
+.navbar .clean-btn,
+.navbar__toggle {
+  color: var(--brand-canvas);
+}
+
+.navbar .navbar-sidebar,
+.navbar-sidebar__brand {
+  background-color: var(--brand-ink);
+}
+
+.navbar-sidebar__items .menu__link {
+  color: var(--brand-canvas);
+}
+
+/* ---------- Sidebar de guías ---------- */
+
+.menu__link--active:not(.menu__link--sublist) {
+  font-weight: 600;
+  box-shadow: inset 2px 0 0 var(--brand-accent);
+}
+
+.menu__list-item-collapsible--active {
+  background: transparent;
+}
+
+/* ---------- Admonitions: sin bordes de color a la izquierda ---------- */
+
+.alert {
+  border-left-width: 1px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+/* ---------- Tablas ---------- */
+
+table {
+  border-radius: 8px;
+}
+
+table thead th {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--brand-text-secondary);
+}
+
+/* ---------- Búsqueda ---------- */
+
+.navbar [class*='searchBar'] input {
+  background: rgb(248 250 252 / 0.08);
+  color: var(--brand-canvas);
+  border-radius: 8px;
+}
+
+.navbar [class*='searchBar'] input::placeholder {
+  color: rgb(248 250 252 / 0.6);
+}

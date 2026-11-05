@@ -1,0 +1,68 @@
+name: CI
+
+# Pipeline de build: verify en cada PR; en push a `development` construye la imagen una
+# sola vez (tag `tree-<árbol de git>`), la publica en GHCR y la despliega en el environment
+# `development`. Esa misma imagen es la que production.yml promueve al mergear a `main`.
+on:
+  pull_request:
+  push:
+    branches: [development]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+
+  image:
+    needs: verify
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Calcular tag por árbol de git
+        run: echo "TREE=$(git rev-parse HEAD^{tree})" >> "$GITHUB_ENV"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:tree-${{ env.TREE }}
+            ${{ env.IMAGE }}:development
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+
+  deploy:
+    needs: image
+    runs-on: ubuntu-latest
+    environment: development
+    # Sin DEPLOY_ENABLED=true el deploy se saltea (no falla).
+    if: vars.DEPLOY_ENABLED == 'true'
+    steps:
+      - uses: ./.github/actions/deploy
+        with:
+          tag: development
+          host: ${{ secrets.DEPLOY_HOST }}
+          user: ${{ secrets.DEPLOY_USER }}
+          ssh-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          known-hosts: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          healthcheck-url: ${{ vars.HEALTHCHECK_URL }}

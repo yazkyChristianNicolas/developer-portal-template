@@ -1,0 +1,16 @@
+/* Ver index.tsx: el ambiente se resuelve en runtime, por eso la visibilidad va por CSS. */
+.root:not([data-mode='sandbox']) .content,
+.root[data-mode='sandbox'] .notice {
+  display: none;
+}
+
+.notice {
+  padding: 16px 20px;
+  border: 1px solid var(--brand-border);
+  border-radius: 12px;
+  background: var(--brand-surface-card);
+}
+
+.notice p {
+  margin: 0;
+}

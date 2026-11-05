@@ -1,0 +1,32 @@
+---
+sidebar_position: 4
+title: Ambientes
+description: URLs de la API, del servidor de autenticación y de la consola, y diferencias entre sandbox y producción.
+---
+
+import EnvironmentTable from '@site/src/components/EnvironmentTable';
+
+# Ambientes
+
+<EnvironmentTable />
+
+Los ejemplos de esta documentación usan variables de shell para no repetir estos valores:
+
+```bash
+export API_URL="<URL base de la API>"
+export TOKEN_URL="<token endpoint>"
+export TOKEN="<access token, ver Autenticación>"
+```
+
+## Sandbox y producción
+
+Son dos deployments completos e independientes, con sus propias cuentas, credenciales y datos: un pedido creado en uno nunca aparece en el otro.
+
+| | Sandbox | Producción |
+|---|---|---|
+| Para qué | Desarrollo y pruebas de integración. | Operación real. |
+| Datos | De prueba, se pueden borrar sin aviso. | Reales. |
+| Credenciales | Propias del ambiente. | Propias del ambiente. |
+| Webhooks | Se entregan a tu URL de prueba. | Se entregan a tu URL de producción. |
+
+Cada portal documenta un ambiente: el contenido que solo aplica a sandbox (como los [datos de prueba](./referencia/datos-de-prueba.mdx)) se oculta en el portal de producción.

@@ -1,0 +1,33 @@
+name: Cleanup images
+
+# Retención de las imágenes del portal en GHCR: conserva las que tienen tag `development` o
+# `production` (lo que corre en cada ambiente), las últimas 10 y lo creado en las últimas
+# 24 h; borra el resto. Corre los lunes; a mano arranca en dry-run.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: Mostrar qué borraría sin borrar.
+        type: boolean
+        default: true
+
+permissions:
+  packages: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: snok/container-retention-policy@v3.0.0
+        with:
+          account: ${{ github.repository_owner }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          image-names: ${{ github.event.repository.name }}
+          tag-selection: both
+          cut-off: 24h
+          keep-n-most-recent: 10
+          skip-shas: ''
+          image-tags: '!development !production'
+          dry-run: ${{ github.event_name != 'workflow_dispatch' || inputs.dry-run }}

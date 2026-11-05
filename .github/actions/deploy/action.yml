@@ -1,0 +1,46 @@
+name: Deploy portal
+description: Actualiza el tag de la imagen en el servidor por SSH y reinicia el servicio del compose.
+
+inputs:
+  tag: {description: Tag de la imagen a desplegar, required: true}
+  host: {description: Host del servidor, required: true}
+  user: {description: Usuario SSH, required: true}
+  ssh-key: {description: Clave privada SSH, required: true}
+  known-hosts: {description: Contenido de known_hosts del servidor, required: true}
+  healthcheck-url: {description: URL a consultar tras el deploy (opcional), required: false, default: ''}
+  compose-dir: {description: Directorio del proyecto compose en el servidor, required: false, default: /opt/developer-portal}
+  compose-service: {description: Servicio del compose, required: false, default: developers-portal}
+  tag-variable: {description: Variable del .env que guarda el tag, required: false, default: DEVELOPERS_PORTAL_TAG}
+
+runs:
+  using: composite
+  steps:
+    - name: Preparar SSH
+      shell: bash
+      env:
+        SSH_KEY: ${{ inputs.ssh-key }}
+        KNOWN_HOSTS: ${{ inputs.known-hosts }}
+      run: |
+        install -m 700 -d ~/.ssh
+        printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy && chmod 600 ~/.ssh/id_deploy
+        printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+
+    - name: Desplegar
+      shell: bash
+      env:
+        TARGET: ${{ inputs.user }}@${{ inputs.host }}
+        DIR: ${{ inputs.compose-dir }}
+        SERVICE: ${{ inputs.compose-service }}
+        VAR: ${{ inputs.tag-variable }}
+        TAG: ${{ inputs.tag }}
+      run: |
+        ssh -i ~/.ssh/id_deploy "$TARGET" "cd '$DIR' \
+          && (grep -v '^$VAR=' .env > .env.tmp || true) && echo '$VAR=$TAG' >> .env.tmp && mv .env.tmp .env \
+          && docker compose pull '$SERVICE' && docker compose up -d '$SERVICE'"
+
+    - name: Healthcheck
+      if: inputs.healthcheck-url != ''
+      shell: bash
+      env:
+        URL: ${{ inputs.healthcheck-url }}
+      run: curl --fail --retry 10 --retry-delay 3 --retry-all-errors -s -o /dev/null "$URL"
